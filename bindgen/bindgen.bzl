@@ -93,6 +93,7 @@ def _rust_bindgen_impl(ctx):
     toolchain = ctx.toolchains[Label("//bindgen:toolchain_type")]
     bindgen_bin = toolchain.bindgen
     clang_bin = toolchain.clang
+    system_includes = toolchain.system_includes
     libclang = toolchain.libclang
     libstdcxx = toolchain.libstdcxx
 
@@ -104,6 +105,7 @@ def _rust_bindgen_impl(ctx):
     include_directories = cc_lib[CcInfo].compilation_context.includes.to_list()
     quote_include_directories = cc_lib[CcInfo].compilation_context.quote_includes.to_list()
     system_include_directories = cc_lib[CcInfo].compilation_context.system_includes.to_list()
+    dirafter_include_directories = [i.dirname for i in system_includes.files.to_list()]
 
     env = {
         "CLANG_PATH": clang_bin.path,
@@ -132,6 +134,7 @@ def _rust_bindgen_impl(ctx):
     args.add_all(include_directories, before_each = "-I")
     args.add_all(quote_include_directories, before_each = "-iquote")
     args.add_all(system_include_directories, before_each = "-isystem")
+    args.add_all(dirafter_include_directories, before_each = "-idirafter")
     args.add_all(ctx.attr.clang_flags)
 
     cc_toolchain, feature_configuration = find_cc_toolchain(ctx)
@@ -171,7 +174,7 @@ def _rust_bindgen_impl(ctx):
         progress_message = "Generating bindings for {}..".format(header.path),
         env = env,
         arguments = [args],
-        tools = tools,
+        tools = depset(tools.to_list() + system_includes.files.to_list()),
     )
 
 rust_bindgen = rule(
@@ -220,6 +223,7 @@ def _rust_bindgen_toolchain_impl(ctx):
         libclang = ctx.attr.libclang,
         libstdcxx = ctx.attr.libstdcxx,
         default_rustfmt = ctx.attr.default_rustfmt,
+        system_includes = ctx.attr.system_includes,
     )
 
 rust_bindgen_toolchain = rule(
@@ -267,6 +271,11 @@ For additional information, see the [Bazel toolchains documentation](https://doc
             doc = "If set, `rust_bindgen` targets will always format generated sources with `rustfmt`.",
             mandatory = False,
             default = True,
+        ),
+        "system_includes": attr.label(
+            doc = "Clang system includes.",
+            allow_files = True,
+            mandatory = False,
         ),
         "libclang": attr.label(
             doc = "A cc_library that provides bindgen's runtime dependency on libclang.",
