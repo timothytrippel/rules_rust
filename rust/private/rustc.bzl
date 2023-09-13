@@ -447,6 +447,12 @@ def get_linker_and_args(ctx, attr, crate_type, cc_toolchain, feature_configurati
         action_name = action_name,
         variables = link_variables,
     )
+
+    # Make sure linker is locateable.
+    for arg in link_args:
+        if "-fuse-ld=" in arg:
+            link_args = link_args + ["-B/somewhere/else"]
+            break
     link_env = cc_common.get_environment_variables(
         feature_configuration = feature_configuration,
         action_name = action_name,
