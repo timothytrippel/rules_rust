@@ -435,6 +435,10 @@ def get_linker_and_args(ctx, attr, crate_type, cc_toolchain, feature_configurati
             for linker_input in dep[CcInfo].linking_context.linker_inputs.to_list():
                 for flag in linker_input.user_link_flags:
                     user_link_flags.append(flag)
+    print("Feature Configuration:", feature_configuration)
+    print("CC Toolchain:", cc_toolchain)
+    print("Rpaths:", rpaths)
+    print("User Link Flags", user_link_flags)
     link_variables = cc_common.create_link_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
@@ -442,11 +446,14 @@ def get_linker_and_args(ctx, attr, crate_type, cc_toolchain, feature_configurati
         runtime_library_search_directories = rpaths,
         user_link_flags = user_link_flags,
     )
+    print("LD Exec:", cc_toolchain.ld_executable)
     link_args = cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
         action_name = action_name,
         variables = link_variables,
     )
+    print(link_args)
+    fail("DEBUG")
     link_env = cc_common.get_environment_variables(
         feature_configuration = feature_configuration,
         action_name = action_name,
